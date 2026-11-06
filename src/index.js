@@ -24,9 +24,18 @@ const client = new Client({
 
 client.commands = new Collection(commands.map((c) => [c.data.name, c]));
 
-client.once(Events.ClientReady, (c) => {
+client.once(Events.ClientReady, async (c) => {
   console.log(`⚡ AirFlex ${VERSION} conectado como ${c.user.tag} en ${c.guilds.cache.size} servidores`);
   c.user.setActivity('/flex · /help', { type: ActivityType.Watching });
+
+  // Registra los slash commands GLOBALMENTE en cada arranque (todos los servidores, actuales y nuevos).
+  // Así basta con hacer git push: no hace falta correr npm run deploy a mano.
+  try {
+    const registered = await c.application.commands.set(commands.map((cmd) => cmd.data.toJSON()));
+    console.log(`✅ ${registered.size} comandos globales listos: ${[...registered.values()].map((x) => '/' + x.name).join(' ')}`);
+  } catch (err) {
+    console.error('❌ No se pudieron registrar los comandos:', err.message);
+  }
 });
 
 // Bot añadido a un servidor nuevo → mensaje de bienvenida con el setup
