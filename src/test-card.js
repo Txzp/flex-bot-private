@@ -27,7 +27,7 @@ const cases = [
       id: 'me',
       username: 'zk',
       createdAt: new Date('2016-03-14'),
-      flags: new UserFlagsBitField(UserFlags.PremiumEarlySupporter | UserFlags.Hypesquad | UserFlags.HypeSquadOnlineHouse1),
+      flags: new UserFlagsBitField(UserFlags.PremiumEarlySupporter | UserFlags.VerifiedDeveloper | UserFlags.ActiveDeveloper | UserFlags.HypeSquadOnlineHouse1),
       avatar: 'a_123',
       banner: 'abc',
       avatarDecorationData: { asset: 'x' },

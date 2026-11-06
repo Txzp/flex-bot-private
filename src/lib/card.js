@@ -5,6 +5,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const { createCanvas, loadImage, GlobalFonts } = require('@napi-rs/canvas');
 const { t } = require('./i18n');
+const { RARITY } = require('./analyzer');
 
 const FONT_DIR = path.join(__dirname, '..', '..', 'assets', 'fonts');
 for (const [file, family] of [
@@ -150,8 +151,8 @@ async function renderCard(p) {
 
   // Badges + perks en una sola lista (con su ícono)
   const items = [
-    ...a.badges.map((b) => ({ label: b.label, color: b.color, og: b.og, icon: b.icon })),
-    ...a.perks.map((pk) => ({ label: t(lang, `perk.${pk.key}`), color: pk.color, og: false, icon: pk.icon })),
+    ...a.badges.map((b) => ({ label: b.short || b.label, color: b.color, rarity: b.rarity, icon: b.icon })),
+    ...a.perks.map((pk) => ({ label: t(lang, `perk.${pk.key}`), color: pk.color, rarity: pk.rarity, icon: pk.icon })),
   ];
 
   const [avatar, banner, deco, tagIcon, ...icons] = await Promise.all([
@@ -289,36 +290,49 @@ async function renderCard(p) {
 
   // ---- Pastillas con nombre de cada badge ----
   let px = 48;
-  let py = 312;
-  ctx.font = '16px PoppinsBold';
+  let py = 310;
   const pills = items.length ? items : [{ label: t(lang, 'card.noBadges'), color: '#4E5058', og: false }];
   pills.forEach((it, i) => {
-    const label = it.og ? `${it.label}  ·  OG` : it.label;
     const hasIcon = items.length > 0;
-    const w = ctx.measureText(label).width + (hasIcon ? 52 : 30);
-    if (px + w > 48 + 640) {
+    const r = it.rarity ? RARITY[it.rarity] : null;
+    ctx.font = '14px PoppinsBold';
+    const labelW = ctx.measureText(it.label).width;
+    ctx.font = '10px PoppinsBold';
+    const tagW = r ? ctx.measureText(r.label).width + 14 : 0;
+    const w = labelW + (hasIcon ? 44 : 26) + (r ? tagW + 6 : 0);
+    if (px + w > 48 + 660) {
       px = 48;
-      py += 40;
+      py += 34;
     }
-    if (py > 352) return;
-    roundRect(ctx, px, py, w, 32, 16);
+    if (py > 310 + 34 * 2) return;
+    roundRect(ctx, px, py, w, 28, 14);
     ctx.fillStyle = panel;
     ctx.fill();
-    ctx.strokeStyle = it.color;
+    ctx.strokeStyle = r ? r.color : it.color;
     ctx.lineWidth = 1.5;
     ctx.stroke();
     let lx = px + 15;
     if (hasIcon) {
-      drawBadgeIcon(ctx, icons[i], it.color, px + 9, py + 5, 22);
-      lx = px + 38;
+      drawBadgeIcon(ctx, icons[i], it.color, px + 7, py + 4, 20);
+      lx = px + 32;
     }
+    ctx.font = '14px PoppinsBold';
     ctx.fillStyle = rgb(ink);
-    ctx.fillText(label, lx, py + 22);
-    px += w + 8;
+    ctx.fillText(it.label, lx, py + 19);
+    if (r) {
+      const tx = lx + labelW + 6;
+      roundRect(ctx, tx, py + 7, tagW, 14, 7);
+      ctx.fillStyle = r.color;
+      ctx.fill();
+      ctx.font = '10px PoppinsBold';
+      ctx.fillStyle = '#111217';
+      ctx.fillText(r.label, tx + 7, py + 18);
+    }
+    px += w + 6;
   });
 
   // ---- Stats ----
-  const SY = 410;
+  const SY = 420;
   const SW = 163;
   const extras = [
     a.extras.animatedAvatar && t(lang, 'card.animated'),
@@ -329,17 +343,24 @@ async function renderCard(p) {
   const stats = [
     [t(lang, 'card.username'), `${a.username.tag}${a.username.lettersOnly ? ' · ' + t(lang, 'card.letters') : ''}`],
     [t(lang, 'card.account'), `${a.age.year} · ${ageText(lang, a.age.months)}`],
-    [t(lang, 'card.badges'), items.length ? `${items.length}  (${a.ogBadges.length} OG)` : t(lang, 'card.none')],
+    [
+      t(lang, 'card.badges'),
+      items.length
+        ? [String(items.length), a.rarityCount.legendary && `${a.rarityCount.legendary} LEG`, a.rarityCount.rare && `${a.rarityCount.rare} RARE`]
+            .filter(Boolean)
+            .join(' · ')
+        : t(lang, 'card.none'),
+    ],
     [t(lang, 'card.extras'), extras.join(' · ') || t(lang, 'card.none')],
   ];
   stats.forEach(([label, value], i) => {
     const x = 48 + i * (SW + 10);
-    roundRect(ctx, x, SY, SW, 76, 14);
+    roundRect(ctx, x, SY, SW, 70, 14);
     ctx.fillStyle = panel;
     ctx.fill();
     ctx.font = '13px Poppins';
     ctx.fillStyle = rgb(muted);
-    ctx.fillText(label.toUpperCase(), x + 14, SY + 26);
+    ctx.fillText(label.toUpperCase(), x + 14, SY + 24);
     let size = 16;
     ctx.font = `${size}px PoppinsBold`;
     while (size > 12 && ctx.measureText(value).width > SW - 24) {
@@ -347,11 +368,11 @@ async function renderCard(p) {
       ctx.font = `${size}px PoppinsBold`;
     }
     ctx.fillStyle = rgb(ink);
-    ctx.fillText(fitText(ctx, value, SW - 24), x + 14, SY + 56);
+    ctx.fillText(fitText(ctx, value, SW - 24), x + 14, SY + 52);
   });
 
   // ---- Medidor ----
-  const BOX = { x: 752, y: 290, w: 208, h: 196 };
+  const BOX = { x: 752, y: 290, w: 208, h: 200 };
   roundRect(ctx, BOX.x, BOX.y, BOX.w, BOX.h, 20);
   ctx.fillStyle = panel;
   ctx.fill();
@@ -387,8 +408,8 @@ async function renderCard(p) {
   ctx.textAlign = 'left';
 
   // ---- Nota ----
-  const NY = 506;
-  roundRect(ctx, 48, NY, W - 88, 84, 16);
+  const NY = 510;
+  roundRect(ctx, 48, NY, W - 88, 82, 16);
   ctx.fillStyle = panel2;
   ctx.fill();
   ctx.fillStyle = tier.color;

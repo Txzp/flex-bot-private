@@ -3,28 +3,37 @@
 // badges públicos, avatar/banner (y si son animados), decoración y tag de servidor.
 // La "About me"/descripción NO está disponible para bots.
 
-// Badges públicos, ordenados de más raro a menos raro.
-// icon = hash del ícono oficial en https://cdn.discordapp.com/badge-icons/{icon}.png
-// (si un ícono no carga, la tarjeta dibuja un círculo de color de respaldo)
-const BADGES = [
-  { flag: 'Staff', key: 'staff', label: 'Discord Staff', points: 3, og: true, color: '#5865F2', icon: '5e74e9b61934fc1f67c65515d1f7e60d' },
-  { flag: 'Partner', key: 'partner', label: 'Partner', points: 2.5, og: true, color: '#4087ED', icon: '3f9748e53446a137a052f3454e2de41e' },
-  { flag: 'BugHunterLevel2', key: 'bug2', label: 'Bug Hunter Gold', points: 2.5, og: true, color: '#E0B000', icon: '848f79194d4be5ff5f81505cbd0ce1e6' },
-  { flag: 'Hypesquad', key: 'hsevents', label: 'HypeSquad Events', points: 2, og: true, color: '#F6A623', icon: 'bf01d1073931f921909045f3a39fd264' },
-  { flag: 'PremiumEarlySupporter', key: 'early', label: 'Early Supporter', points: 2, og: true, color: '#B45CFF', icon: '7060786766c9c840eb3019e725d2b358' },
-  { flag: 'VerifiedDeveloper', key: 'devbadge', label: 'Early Bot Dev', points: 2, og: true, color: '#3E70DD', icon: '6df5892e0f35b051f8b61eace34f4967' },
-  { flag: 'BugHunterLevel1', key: 'bug1', label: 'Bug Hunter', points: 1.5, og: true, color: '#3BA55C', icon: '2717692c7dca7289b35297368a940dd0' },
-  { flag: 'CertifiedModerator', key: 'mod', label: 'Mod Alumni', points: 1.5, og: true, color: '#00A8E8', icon: 'fee1624003e2fee35cb398e125dc479b' },
-  { flag: 'ActiveDeveloper', key: 'activedev', label: 'Active Developer', points: 0.5, og: false, color: '#23A55A', icon: '6bdc42827a38498929a4920da12695d9' },
-  { flag: 'HypeSquadOnlineHouse1', key: 'bravery', label: 'Bravery', points: 0.25, og: false, color: '#9C84EF', icon: '8a88d63823d8a71cd5e390baa45efa02' },
-  { flag: 'HypeSquadOnlineHouse2', key: 'brilliance', label: 'Brilliance', points: 0.25, og: false, color: '#F47B67', icon: '011940fd013da3f7fb926e4a1cd2e618' },
-  { flag: 'HypeSquadOnlineHouse3', key: 'balance', label: 'Balance', points: 0.25, og: false, color: '#45DDC0', icon: '3aa41de486fa12454c3761e8e223442e' },
-];
+// Badges públicos (public_flags de la API de Discord), agrupados por rareza.
+// flag = nombre en discord.js (user.flags.toArray()) · id = nombre oficial en la API.
+// icon = hash del PNG oficial: https://cdn.discordapp.com/badge-icons/{icon}.png
+const RARITY = {
+  legendary: { label: 'LEGENDARY', color: '#FFC83D', order: 0 },
+  rare: { label: 'RARE', color: '#5AA9FF', order: 1 },
+  special: { label: 'SPECIAL', color: '#FF73FA', order: 2 },
+};
 
-// Íconos de los "perks" que AirFlex deduce (no vienen en los badges públicos)
+const BADGES = [
+  // LEGENDARY
+  { flag: 'Staff', id: 'staff', label: 'Discord Staff', short: 'Staff', rarity: 'legendary', points: 3, color: '#5865F2', icon: '5e74e9b61934fc1f67c65515d1f7e60d' },
+  { flag: 'Partner', id: 'partner', label: 'Partnered Server Owner', short: 'Partner', rarity: 'legendary', points: 2.5, color: '#4087ED', icon: '3f9748e53446a137a052f3454e2de41e' },
+  { flag: 'BugHunterLevel2', id: 'bug_hunter_level_2', label: 'Bug Hunter Level 2', short: 'Bug Hunter 2', rarity: 'legendary', points: 2.5, color: '#E0B000', icon: '848f79194d4be5ff5f81505cbd0ce1e6' },
+  { flag: 'PremiumEarlySupporter', id: 'early_supporter', label: 'Early Supporter', short: 'Early Supporter', rarity: 'legendary', points: 2.5, color: '#B45CFF', icon: '7060786766c9c840eb3019e725d2b358' },
+  // RARE
+  { flag: 'BugHunterLevel1', id: 'bug_hunter_level_1', label: 'Bug Hunter Level 1', short: 'Bug Hunter 1', rarity: 'rare', points: 1.5, color: '#3BA55C', icon: '2717692c7dca7289b35297368a940dd0' },
+  { flag: 'CertifiedModerator', id: 'certified_moderator', label: 'Moderator Alumni', short: 'Mod Alumni', rarity: 'rare', points: 1.5, color: '#00A8E8', icon: 'fee1624003e2fee35cb398e125dc479b' },
+  { flag: 'VerifiedDeveloper', id: 'verified_developer', label: 'Early Verified Bot Developer', short: 'Early Bot Dev', rarity: 'rare', points: 1.5, color: '#3E70DD', icon: '6df5892e0f35b051f8b61eace34f4967' },
+  // SPECIAL
+  { flag: 'Hypesquad', id: 'hypesquad', label: 'HypeSquad Events', short: 'HypeSquad Events', rarity: 'special', points: 1, color: '#F6A623', icon: 'bf01d1073931f921909045f3a39fd264' },
+  { flag: 'HypeSquadOnlineHouse1', id: 'hypesquad_house_1', label: 'HypeSquad Bravery', short: 'Bravery', rarity: 'special', points: 0.25, color: '#9C84EF', icon: '8a88d63823d8a71cd5e390baa45efa02' },
+  { flag: 'HypeSquadOnlineHouse2', id: 'hypesquad_house_2', label: 'HypeSquad Brilliance', short: 'Brilliance', rarity: 'special', points: 0.25, color: '#F47B67', icon: '011940fd013da3f7fb926e4a1cd2e618' },
+  { flag: 'HypeSquadOnlineHouse3', id: 'hypesquad_house_3', label: 'HypeSquad Balance', short: 'Balance', rarity: 'special', points: 0.25, color: '#45DDC0', icon: '3aa41de486fa12454c3761e8e223442e' },
+  { flag: 'ActiveDeveloper', id: 'active_developer', label: 'Active Developer', short: 'Active Dev', rarity: 'special', points: 0.5, color: '#23A55A', icon: '6bdc42827a38498929a4920da12695d9' },
+].map((b) => ({ ...b, key: b.id, og: b.rarity !== 'special' }));
+
+// Perks que AirFlex deduce (NO vienen en public_flags). Rareza: SPECIAL.
 const PERK_ICONS = {
-  nitro: '2ba85e8026a8614b640c2837bcdfe21b',
-  booster: '51040c70d4f20a921ad6674ff86fc95c',
+  nitro: '2ba85e8026a8614b640c2837bcdfe21b', // premium
+  booster: '51040c70d4f20a921ad6674ff86fc95c', // guild_booster_lvl1 (el nivel real no se puede saber)
 };
 
 // Palabras comunes: un username que sea palabra real vale más.
@@ -36,16 +45,16 @@ const WORDS = new Set(
   ).split(',')
 );
 
+// Lee los public_flags con user.flags.toArray() y los cruza con la tabla de arriba
 function badgeList(user) {
-  const flags = user.flags;
-  if (!flags) return [];
-  return BADGES.filter((b) => {
-    try {
-      return flags.has(b.flag);
-    } catch {
-      return false;
-    }
-  });
+  let names = [];
+  try {
+    names = user.flags ? user.flags.toArray() : [];
+  } catch {
+    names = [];
+  }
+  const owned = new Set(names);
+  return BADGES.filter((b) => owned.has(b.flag)).sort((a, b) => RARITY[a.rarity].order - RARITY[b.rarity].order);
 }
 
 function analyzeUsername(raw) {
@@ -117,10 +126,10 @@ function analyzeUser(user, member = null) {
   // "Perks": cosas que se ven en el perfil pero NO son badges públicos de la API.
   // Nitro se deduce: banner propio o avatar animado solo se pueden tener con Nitro.
   const perks = [];
-  if (hasBanner || animatedAvatar || animatedBanner) perks.push({ key: 'nitro', color: '#FF73FA', icon: PERK_ICONS.nitro });
-  if (booster) perks.push({ key: 'booster', color: '#F47FFF', icon: PERK_ICONS.booster });
-  if (owner) perks.push({ key: 'owner', color: '#FAA61A' });
-  if (nameplate) perks.push({ key: 'nameplate', color: '#5AC8FA' });
+  if (hasBanner || animatedAvatar || animatedBanner) perks.push({ key: 'nitro', rarity: 'special', color: '#FF73FA', icon: PERK_ICONS.nitro });
+  if (booster) perks.push({ key: 'booster', rarity: 'special', color: '#F47FFF', icon: PERK_ICONS.booster });
+  if (owner) perks.push({ key: 'owner', rarity: null, color: '#FAA61A' });
+  if (nameplate) perks.push({ key: 'nameplate', rarity: null, color: '#5AC8FA' });
 
   const badgePoints = badges.reduce((s, b) => s + b.points, 0);
   let extrasPoints = 0;
@@ -132,6 +141,7 @@ function analyzeUser(user, member = null) {
   if (nameplate) extrasPoints += 0.5;
   if (booster) extrasPoints += 0.5;
   if (owner) extrasPoints += 0.25;
+  if (perks.some((pk) => pk.key === 'nitro')) extrasPoints += 0.5;
 
   const BASE = 1;
   const raw = BASE + username.points + age.points + badgePoints + extrasPoints;
@@ -144,10 +154,15 @@ function analyzeUser(user, member = null) {
     age,
     badges,
     ogBadges: badges.filter((b) => b.og),
+    rarityCount: {
+      legendary: badges.filter((b) => b.rarity === 'legendary').length,
+      rare: badges.filter((b) => b.rarity === 'rare').length,
+      special: badges.filter((b) => b.rarity === 'special').length + perks.filter((pk) => pk.rarity === 'special').length,
+    },
     perks,
     extras: { animatedAvatar, hasBanner, animatedBanner, decoration, guildTag, nameplate, owner, booster },
     breakdown: { base: BASE, username: username.points, age: age.points, badges: badgePoints, extras: extrasPoints },
   };
 }
 
-module.exports = { analyzeUser, analyzeUsername, BADGES, tierFor };
+module.exports = { analyzeUser, analyzeUsername, BADGES, RARITY, tierFor };

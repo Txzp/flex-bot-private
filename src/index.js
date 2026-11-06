@@ -26,7 +26,8 @@ client.commands = new Collection(commands.map((c) => [c.data.name, c]));
 
 client.once(Events.ClientReady, async (c) => {
   console.log(`⚡ AirFlex ${VERSION} conectado como ${c.user.tag} en ${c.guilds.cache.size} servidores`);
-  c.user.setActivity('/flex · /help', { type: ActivityType.Watching });
+  // Estado del bot (sale debajo de su nombre en la lista de miembros)
+  c.user.setPresence({ activities: [{ name: 'AirFlex', type: ActivityType.Custom, state: '/help · www.airflex.fun' }] });
 
   // Registra los slash commands GLOBALMENTE en cada arranque (todos los servidores, actuales y nuevos).
   // Así basta con hacer git push: no hace falta correr npm run deploy a mano.
