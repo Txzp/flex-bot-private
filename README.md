@@ -1,4 +1,4 @@
-# ⚡ AirFlex v1.03
+# ⚡ AirFlex v1.04
 
 Bot de Discord que califica perfiles del **0 al 10** con una tarjeta de preview. Sin IA de pago: todo funciona con reglas.
 

@@ -1,6 +1,6 @@
 {
   "name": "airflex-bot",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "AirFlex — califica tu perfil de Discord del 0 al 10 con una tarjeta de preview.",
   "main": "src/index.js",
   "scripts": {

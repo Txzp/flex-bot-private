@@ -36,7 +36,8 @@ async function sendFlex(interaction, targetId, intro) {
   const lang = getLang(interaction.guildId);
   try {
     const user = await interaction.client.users.fetch(targetId, { force: true });
-    if (!user.flags) await user.fetchFlags().catch(() => null);
+    // Asegura los badges públicos (public_flags) aunque el caché venga vacío
+    if (!user.flags || user.flags.bitfield === 0) await user.fetchFlags(true).catch(() => null);
     const member = await interaction.guild.members.fetch(targetId).catch(() => null);
 
     const analysis = analyzeUser(user, member);

@@ -36,6 +36,21 @@ client.once(Events.ClientReady, async (c) => {
   } catch (err) {
     console.error('❌ No se pudieron registrar los comandos:', err.message);
   }
+
+  // Borra comandos "de servidor" viejos (de npm run deploy:test) → evita comandos DUPLICADOS
+  let cleaned = 0;
+  for (const guild of c.guilds.cache.values()) {
+    try {
+      const local = await guild.commands.fetch();
+      if (local.size) {
+        await guild.commands.set([]);
+        cleaned++;
+      }
+    } catch {
+      /* sin acceso a ese servidor */
+    }
+  }
+  if (cleaned) console.log(`🧹 Comandos duplicados borrados en ${cleaned} servidor(es)`);
 });
 
 // Bot añadido a un servidor nuevo → mensaje de bienvenida con el setup

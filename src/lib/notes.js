@@ -61,7 +61,7 @@ function buildNote(a, lang = 'es') {
   if (a.username.digitCount >= 2) bad.push(d.digits);
   if (a.username.len >= 12) bad.push(d.longName);
   if (a.age.year >= 2023) bad.push(d.newAccount);
-  if (!a.badges.length) bad.push(d.noBadges);
+  if (!a.badges.length && !a.perks.length) bad.push(d.noBadges);
 
   const highScore = a.score >= 5.5;
   const pool = highScore ? (good.length ? good : bad) : (bad.length ? bad : good);
