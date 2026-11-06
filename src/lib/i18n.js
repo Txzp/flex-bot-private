@@ -5,9 +5,11 @@ const STRINGS = {
   es: {
     // Setup (pasos después de elegir idioma)
     'setup.onlyAdmins': '🔒 Solo los admins (permiso **Gestionar servidor**) pueden configurar AirFlex.',
-    'setup.channel': '📍 **Paso 2 de 2 — ¿Dónde se podrá usar AirFlex?**\nElige el canal donde funcionarán los comandos.',
+    'setup.channel.title': '📍 ¿Dónde se podrá usar AirFlex?',
+    'setup.channel.desc': 'Paso **2 de 2**\nElige el canal donde funcionarán los comandos.',
     'setup.channel.placeholder': 'Selecciona un canal…',
-    'setup.done': '✅ **¡Todo listo!**\nAirFlex está activo en {channel}. Prueba con `/flex` o `/random` 🔥',
+    'setup.done.title': '✅ ¡Todo listo!',
+    'setup.done.desc': 'AirFlex está activo en {channel}.\nPrueba con `/flex` o `/random` 🔥',
     'setup.noPerms':
       '⚠️ No puedo escribir en {channel}. Dame permisos de **Ver canal**, **Enviar mensajes**, **Insertar enlaces** y **Adjuntar archivos** ahí, o elige otro canal.',
 
@@ -61,9 +63,11 @@ const STRINGS = {
 
   en: {
     'setup.onlyAdmins': '🔒 Only admins (**Manage Server** permission) can set up AirFlex.',
-    'setup.channel': '📍 **Step 2 of 2 — Where can AirFlex be used?**\nPick the channel where the commands will work.',
+    'setup.channel.title': '📍 Where can AirFlex be used?',
+    'setup.channel.desc': 'Step **2 of 2**\nPick the channel where the commands will work.',
     'setup.channel.placeholder': 'Select a channel…',
-    'setup.done': '✅ **All set!**\nAirFlex is live in {channel}. Try `/flex` or `/random` 🔥',
+    'setup.done.title': '✅ All set!',
+    'setup.done.desc': 'AirFlex is live in {channel}.\nTry `/flex` or `/random` 🔥',
     'setup.noPerms':
       '⚠️ I can\'t post in {channel}. Give me **View Channel**, **Send Messages**, **Embed Links** and **Attach Files** there, or pick another channel.',
 

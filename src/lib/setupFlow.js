@@ -2,6 +2,7 @@
 // Los botones guardan el paso en su customId (afsetup:...), así funcionan
 // aunque pasen horas o el bot se reinicie.
 const {
+  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -13,7 +14,7 @@ const {
 const { t } = require('./i18n');
 const { setGuild, getLang } = require('./storage');
 const { helpButtonRow } = require('./help');
-const { CREDIT } = require('../config');
+const { CREDIT, COLOR } = require('../config');
 
 const PREFIX = 'afsetup';
 const NEEDED = [
@@ -22,16 +23,18 @@ const NEEDED = [
   PermissionFlagsBits.EmbedLinks,
   PermissionFlagsBits.AttachFiles,
 ];
-const footer = `\n-# ${CREDIT}`;
+const embed = (title, desc) => new EmbedBuilder().setColor(COLOR).setTitle(title).setDescription(desc).setFooter({ text: CREDIT });
 
 // Paso 0: bienvenida (siempre en inglés)
 function welcomeView(guild) {
   return {
-    content:
-      `# ⚡ AirFlex is now in ${guild.name}!\n` +
-      'AirFlex rates your profile from **0 to 10**. Ready to flex? 👑\n\n' +
-      "**Let's get it ready in 2 steps.**" +
-      footer,
+    content: null,
+    embeds: [
+      embed(
+        `⚡ AirFlex is now in ${guild.name}!`,
+        "AirFlex rates your profile from **0 to 10**. Ready to flex? 👑\n\n**Let's get it ready in 2 steps.**"
+      ),
+    ],
     components: [
       new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`${PREFIX}:start`).setLabel("Let's Start").setEmoji('🚀').setStyle(ButtonStyle.Primary)
@@ -44,7 +47,8 @@ function welcomeView(guild) {
 // Paso 1: idioma
 function languageView() {
   return {
-    content: '🌐 **Step 1 of 2 — Choose your language / Elige tu idioma**' + footer,
+    content: null,
+    embeds: [embed('🌐 Choose your language / Elige tu idioma', 'Step **1 of 2**')],
     components: [
       new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId(`${PREFIX}:lang:en`).setLabel('English').setEmoji('🇺🇸').setStyle(ButtonStyle.Secondary),
@@ -57,7 +61,8 @@ function languageView() {
 // Paso 2: canal
 function channelView(lang, warning) {
   return {
-    content: t(lang, 'setup.channel') + (warning ? `\n\n${warning}` : '') + footer,
+    content: null,
+    embeds: [embed(t(lang, 'setup.channel.title'), t(lang, 'setup.channel.desc') + (warning ? `\n\n${warning}` : ''))],
     components: [
       new ActionRowBuilder().addComponents(
         new ChannelSelectMenuBuilder()
@@ -95,7 +100,8 @@ async function handleSetupInteraction(interaction) {
     }
     await setGuild(interaction.guildId, { lang, channelId: channel.id, setupBy: interaction.user.id });
     return interaction.update({
-      content: t(lang, 'setup.done', { channel: `${channel}` }) + footer,
+      content: null,
+      embeds: [embed(t(lang, 'setup.done.title'), t(lang, 'setup.done.desc', { channel: `${channel}` }))],
       components: [helpButtonRow(lang)],
       allowedMentions: { parse: [] },
     });
