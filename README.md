@@ -1,4 +1,4 @@
-# ⚡ AirFlex v1.05
+# ⚡ AirFlex v1.06
 
 Bot de Discord que califica perfiles del **0 al 10** con una tarjeta de preview. Sin IA de pago: todo funciona con reglas.
 
@@ -9,6 +9,9 @@ Bot de Discord que califica perfiles del **0 al 10** con una tarjeta de preview.
 | `/flex` | Analiza **tu** perfil |
 | `/flex @user` | Analiza el perfil de **otro** usuario |
 | `/random` | 🎲 Elige a alguien al azar (de los que hablaron hace poco) y lo califica |
+| `/verify` | ✅ Login con Discord: muestra Nitro real y conexiones públicas en la tarjeta |
+| `/unverify` | Borra los datos de verificación del usuario |
+| `/debug @user` | (Admins) Datos crudos que Discord le da al bot sobre ese perfil |
 | `/help` o `!AirHelp` | Lista de comandos (también el botón **Help**) |
 | `/ping` | 🏓 Pong! `44ms` |
 | `/version` | Muestra la versión (`v1.00`) |
@@ -81,3 +84,17 @@ Cuando el bot entra a un server nuevo, manda solo el mensaje **"AirFlex is now i
 4. **cron-job.org**: crea un cronjob que visite tu URL de Render (`https://tu-bot.onrender.com`) **cada 10 minutos**. Así Render nunca lo duerme.
 
 Render Free da 750 horas al mes, suficiente para tener 1 servicio prendido todo el mes.
+
+## /verify (Login with Discord) — opcional
+Así un usuario le enseña a AirFlex su **Nitro real** y sus **conexiones públicas**, que la API normal no da.
+1. Developer Portal → **OAuth2** → copia el **Client Secret** (Reset Secret si hace falta).
+2. **OAuth2 → Redirects → Add Redirect:** `https://flex-bot-private.onrender.com/callback` → Save.
+3. Render → Environment: `CLIENT_SECRET` y `PUBLIC_URL=https://flex-bot-private.onrender.com`.
+4. En los logs debe salir `🔐 /verify activado`.
+
+Solo se guarda el tipo de Nitro y los **tipos** de conexiones públicas. El token de acceso se revoca al terminar.
+
+## Depurar badges
+- `/debug @user` (admins) muestra los `public_flags` crudos y qué detectó el bot.
+- `AIRFLEX_DEBUG=1` en Render imprime en los logs los datos de cada `/flex`.
+- Cuando sacan al bot de un servidor, su configuración se borra sola.

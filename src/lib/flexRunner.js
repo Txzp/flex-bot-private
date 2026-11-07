@@ -3,10 +3,11 @@ const { EmbedBuilder, AttachmentBuilder, MessageFlags } = require('discord.js');
 const { t } = require('./i18n');
 const { getGuild, getLang } = require('./storage');
 const { analyzeUser } = require('./analyzer');
+const { getFullProfile } = require('./profile');
 const { buildNote } = require('./notes');
 const { renderCard } = require('./card');
 const { helpButtonRow } = require('./help');
-const { CREDIT, COOLDOWN_MS } = require('../config');
+const { COOLDOWN_MS } = require('../config');
 
 const cooldowns = new Map();
 
@@ -35,12 +36,11 @@ async function precheck(interaction) {
 async function sendFlex(interaction, targetId, intro) {
   const lang = getLang(interaction.guildId);
   try {
-    const user = await interaction.client.users.fetch(targetId, { force: true });
-    // Asegura los badges públicos (public_flags) aunque el caché venga vacío
-    if (!user.flags || user.flags.bitfield === 0) await user.fetchFlags(true).catch(() => null);
-    const member = await interaction.guild.members.fetch(targetId).catch(() => null);
+    // Perfil completo: JSON crudo de la API + boosts en servidores en común + datos de /verify
+    const profile = await getFullProfile(interaction.client, targetId, interaction.guild);
+    const { user } = profile;
 
-    const analysis = analyzeUser(user, member);
+    const analysis = analyzeUser(user, profile);
     const note = buildNote(analysis, lang);
     const png = await renderCard({
       analysis,
@@ -61,7 +61,7 @@ async function sendFlex(interaction, targetId, intro) {
       .setTitle(t(lang, 'flex.title', { name: user.globalName || user.username, score: scoreText }))
       .setDescription(`> ${note}`)
       .setImage('attachment://airflex.png')
-      .setFooter({ text: `${CREDIT} · ${analysis.tier.label}` });
+      .setFooter({ text: analysis.verified ? `✅ Verified · ${analysis.tier.label}` : analysis.tier.label });
 
     await interaction.editReply({
       content: intro || null,

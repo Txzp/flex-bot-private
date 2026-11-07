@@ -34,7 +34,13 @@ const cases = [
       primaryGuild: { tag: '0km', identityEnabled: true },
       collectibles: { nameplate: { asset: 'x' } },
     },
-    member: { guild: { ownerId: 'me' }, premiumSince: new Date() },
+    ctx: {
+      publicFlags: UserFlags.PremiumEarlySupporter | UserFlags.VerifiedDeveloper | UserFlags.ActiveDeveloper | UserFlags.HypeSquadOnlineHouse1,
+      raw: { avatar: 'a_123', banner: 'abc', avatar_decoration_data: { asset: 'x' }, primary_guild: { tag: '0km', identity_enabled: true } },
+      boosts: [{}, {}],
+      owner: true,
+      verified: { premiumType: 2, connections: ['spotify', 'steam'] },
+    },
     banner: fakeImage(1000, 200, '#0f766e', '#22d3ee'),
     avatar: fakeImage(256, 256, '#f97316', '#be123c'),
     accent: null,
@@ -43,7 +49,7 @@ const cases = [
     file: 'test-card-npc.png',
     display: 'juanito',
     user: { id: 'x', username: 'juan_pro2847', createdAt: new Date('2025-02-01'), flags: new UserFlagsBitField(0), avatar: null, banner: null },
-    member: null,
+    ctx: { publicFlags: 0, raw: { avatar: null, banner: null }, boosts: [], owner: false, verified: null },
     banner: null,
     avatar: null,
     accent: 0x9d174d,
@@ -53,7 +59,7 @@ const cases = [
 (async () => {
   const lang = process.argv[2] || 'es';
   for (const c of cases) {
-    const analysis = analyzeUser(c.user, c.member);
+    const analysis = analyzeUser(c.user, c.ctx);
     const note = buildNote(analysis, lang);
     const png = await renderCard({
       analysis,

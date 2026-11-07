@@ -1,13 +1,15 @@
-// Guarda la configuración de cada servidor (idioma + canal).
-// - Con MONGODB_URI en el .env → MongoDB Atlas (gratis, no se pierde nunca). Úsalo en el hosting.
-// - Sin MONGODB_URI → archivo data/guilds.json (bien para probar en tu PC).
+// Guarda:
+//  - guilds:   configuración de cada servidor (idioma + canal)
+//  - verified: usuarios que hicieron /verify (tipo de Nitro + tipos de conexiones)
+// Con MONGODB_URI → MongoDB Atlas. Sin MONGODB_URI → archivos en data/ (para probar en tu PC).
 // Todo se mantiene en memoria para que leer sea instantáneo.
 const fs = require('node:fs');
 const path = require('node:path');
 
-const FILE = path.join(__dirname, '..', '..', 'data', 'guilds.json');
-let cache = {};
-let collection = null;
+const DATA_DIR = path.join(__dirname, '..', '..', 'data');
+const FILES = { guilds: path.join(DATA_DIR, 'guilds.json'), verified: path.join(DATA_DIR, 'verified.json') };
+const cache = { guilds: {}, verified: {} };
+const cols = { guilds: null, verified: null };
 
 async function init() {
   const uri = process.env.MONGODB_URI;
@@ -15,43 +17,56 @@ async function init() {
     const { MongoClient } = require('mongodb');
     const client = new MongoClient(uri);
     await client.connect();
-    collection = client.db('airflex').collection('guilds');
-    const docs = await collection.find({}).toArray();
-    cache = Object.fromEntries(docs.map(({ _id, ...rest }) => [_id, rest]));
-    console.log(`🗄️  MongoDB conectado (${docs.length} servidores configurados)`);
-  } else {
-    try {
-      cache = JSON.parse(fs.readFileSync(FILE, 'utf8'));
-    } catch {
-      cache = {};
+    const db = client.db('airflex');
+    for (const name of Object.keys(cache)) {
+      cols[name] = db.collection(name);
+      const docs = await cols[name].find({}).toArray();
+      cache[name] = Object.fromEntries(docs.map(({ _id, ...rest }) => [_id, rest]));
     }
-    console.log(`🗄️  Usando data/guilds.json (${Object.keys(cache).length} servidores configurados)`);
-  }
-}
-
-function saveFile() {
-  fs.mkdirSync(path.dirname(FILE), { recursive: true });
-  const tmp = FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(cache, null, 2));
-  fs.renameSync(tmp, FILE);
-}
-
-function getGuild(guildId) {
-  return cache[guildId] || null;
-}
-
-async function setGuild(guildId, data) {
-  cache[guildId] = { ...(cache[guildId] || {}), ...data, updatedAt: new Date().toISOString() };
-  if (collection) {
-    await collection.updateOne({ _id: guildId }, { $set: cache[guildId] }, { upsert: true });
+    console.log(`🗄️  MongoDB conectado (${Object.keys(cache.guilds).length} servidores, ${Object.keys(cache.verified).length} verificados)`);
   } else {
-    saveFile();
+    for (const name of Object.keys(cache)) {
+      try {
+        cache[name] = JSON.parse(fs.readFileSync(FILES[name], 'utf8'));
+      } catch {
+        cache[name] = {};
+      }
+    }
+    console.log(`🗄️  Usando data/*.json (${Object.keys(cache.guilds).length} servidores, ${Object.keys(cache.verified).length} verificados)`);
   }
-  return cache[guildId];
 }
 
-function getLang(guildId) {
-  return cache[guildId]?.lang || 'en';
+function saveFile(name) {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const tmp = FILES[name] + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(cache[name], null, 2));
+  fs.renameSync(tmp, FILES[name]);
 }
 
-module.exports = { init, getGuild, setGuild, getLang };
+async function put(name, id, data) {
+  cache[name][id] = { ...(cache[name][id] || {}), ...data, updatedAt: new Date().toISOString() };
+  if (cols[name]) await cols[name].updateOne({ _id: id }, { $set: cache[name][id] }, { upsert: true });
+  else saveFile(name);
+  return cache[name][id];
+}
+
+async function remove(name, id) {
+  const existed = Boolean(cache[name][id]);
+  delete cache[name][id];
+  if (cols[name]) await cols[name].deleteOne({ _id: id });
+  else saveFile(name);
+  return existed;
+}
+
+// Servidores
+const getGuild = (guildId) => cache.guilds[guildId] || null;
+const setGuild = (guildId, data) => put('guilds', guildId, data);
+const deleteGuild = (guildId) => remove('guilds', guildId);
+const getLang = (guildId) => cache.guilds[guildId]?.lang || 'en';
+
+// Usuarios verificados
+const getVerified = (userId) => cache.verified[userId] || null;
+const setVerified = (userId, data) => put('verified', userId, data);
+const deleteVerified = (userId) => remove('verified', userId);
+
+module.exports = { init, getGuild, setGuild, deleteGuild, getLang, getVerified, setVerified, deleteVerified };

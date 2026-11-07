@@ -152,7 +152,7 @@ async function renderCard(p) {
   // Badges + perks en una sola lista (con su ícono)
   const items = [
     ...a.badges.map((b) => ({ label: b.short || b.label, color: b.color, rarity: b.rarity, icon: b.icon })),
-    ...a.perks.map((pk) => ({ label: t(lang, `perk.${pk.key}`), color: pk.color, rarity: pk.rarity, icon: pk.icon })),
+    ...a.perks.map((pk) => ({ label: pk.label || t(lang, `perk.${pk.key}`), color: pk.color, rarity: pk.rarity, icon: pk.icon })),
   ];
 
   const [avatar, banner, deco, tagIcon, ...icons] = await Promise.all([
@@ -248,22 +248,27 @@ async function renderCard(p) {
   }
 
   // ---- Fila de íconos de badges (como en el perfil de Discord) ----
-  if (items.length) {
+  // Solo badges de verdad (con rareza): no cuenta conexiones, Owner ni Nameplate
+  const badgeIdx = items.map((it, i) => (it.rarity ? i : -1)).filter((i) => i >= 0);
+  if (badgeIdx.length) {
     const IS = 30;
     const GAP = 6;
-    const max = Math.min(items.length, 12);
+    const max = Math.min(badgeIdx.length, 12);
     const bw = max * IS + (max - 1) * GAP + 22;
     const bx = W - 40 - bw;
     const by = 214;
     roundRect(ctx, bx, by, bw, IS + 16, 12);
     ctx.fillStyle = panel2;
     ctx.fill();
-    for (let i = 0; i < max; i++) drawBadgeIcon(ctx, icons[i], items[i].color, bx + 11 + i * (IS + GAP), by + 8, IS);
+    for (let k = 0; k < max; k++) {
+      const i = badgeIdx[k];
+      drawBadgeIcon(ctx, icons[i], items[i].color, bx + 11 + k * (IS + GAP), by + 8, IS);
+    }
   }
 
   // ---- Nombre, @username y Server Tag ----
   const NX = 228;
-  const nameMax = items.length ? 360 : 520;
+  const nameMax = badgeIdx.length ? 360 : 520;
   ctx.fillStyle = rgb(ink);
   ctx.font = '42px PoppinsBold';
   ctx.fillText(fitText(ctx, stripEmoji(p.displayName) || p.username, nameMax), NX, 250);
@@ -272,8 +277,9 @@ async function renderCard(p) {
   const handle = fitText(ctx, `@${p.username}`, 300);
   ctx.fillText(handle, NX, 284);
 
+  let chipX = NX + ctx.measureText(handle).width + 12;
   if (a.extras.guildTag) {
-    const tx = NX + ctx.measureText(handle).width + 12;
+    const tx = chipX;
     ctx.font = '17px PoppinsBold';
     const tw = ctx.measureText(a.extras.guildTag).width + (tagIcon ? 26 : 0) + 18;
     roundRect(ctx, tx, 262, tw, 28, 8);
@@ -286,6 +292,28 @@ async function renderCard(p) {
     }
     ctx.fillStyle = rgb(ink);
     ctx.fillText(a.extras.guildTag, ix, 283);
+    chipX = tx + tw + 8;
+  }
+
+  // Chip ✓ VERIFIED (hizo /verify con su cuenta de Discord)
+  if (a.verified) {
+    ctx.font = '13px PoppinsBold';
+    const label = 'VERIFIED';
+    const vw = ctx.measureText(label).width + 40;
+    roundRect(ctx, chipX, 263, vw, 26, 13);
+    ctx.fillStyle = '#23A55A';
+    ctx.fill();
+    // palomita dibujada (la fuente no trae el símbolo)
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(chipX + 11, 276);
+    ctx.lineTo(chipX + 15, 280);
+    ctx.lineTo(chipX + 22, 271);
+    ctx.stroke();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(label, chipX + 28, 281);
   }
 
   // ---- Pastillas con nombre de cada badge ----
@@ -339,14 +367,15 @@ async function renderCard(p) {
     a.extras.hasBanner && t(lang, 'card.banner'),
     a.extras.decoration && t(lang, 'card.deco'),
     a.extras.guildTag && t(lang, 'card.tag'),
+    a.extras.boostCount > 1 && `${a.extras.boostCount} boosts`,
   ].filter(Boolean);
   const stats = [
     [t(lang, 'card.username'), `${a.username.tag}${a.username.lettersOnly ? ' · ' + t(lang, 'card.letters') : ''}`],
     [t(lang, 'card.account'), `${a.age.year} · ${ageText(lang, a.age.months)}`],
     [
       t(lang, 'card.badges'),
-      items.length
-        ? [String(items.length), a.rarityCount.legendary && `${a.rarityCount.legendary} LEG`, a.rarityCount.rare && `${a.rarityCount.rare} RARE`]
+      badgeIdx.length
+        ? [String(badgeIdx.length), a.rarityCount.legendary && `${a.rarityCount.legendary} LEG`, a.rarityCount.rare && `${a.rarityCount.rare} RARE`]
             .filter(Boolean)
             .join(' · ')
         : t(lang, 'card.none'),
