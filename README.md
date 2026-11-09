@@ -1,4 +1,4 @@
-# ⚡ AirFlex v1.06
+# ⚡ AirFlex v1.07
 
 Bot de Discord que califica perfiles del **0 al 10** con una tarjeta de preview. Sin IA de pago: todo funciona con reglas.
 
@@ -13,6 +13,7 @@ Bot de Discord que califica perfiles del **0 al 10** con una tarjeta de preview.
 | `/unverify` | Borra los datos de verificación del usuario |
 | `/debug @user` | (Admins) Datos crudos que Discord le da al bot sobre ese perfil |
 | `/help` o `!AirHelp` | Lista de comandos (también el botón **Help**) |
+| `/credits` | 👑 Créditos (público, se borra a los 7 segundos) |
 | `/ping` | 🏓 Pong! `44ms` |
 | `/version` | Muestra la versión (`v1.00`) |
 

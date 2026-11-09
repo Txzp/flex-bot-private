@@ -6,6 +6,7 @@ module.exports = [
   require('./verify'),
   require('./unverify'),
   require('./debug'),
+  require('./credits'),
   require('./help'),
   require('./ping'),
   require('./version'),

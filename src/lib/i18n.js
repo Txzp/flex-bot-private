@@ -34,6 +34,7 @@ const STRINGS = {
       '`/random` — 🎲 Elige a alguien al azar del servidor y lo califica.\n' +
       '`/verify` — ✅ Verifica tu cuenta: Nitro real y conexiones en tu tarjeta.\n' +
       '`/unverify` — Borra tus datos de verificación.\n' +
+      '`/credits` — 👑 Quién creó AirFlex.\n' +
       '`/ping` — 🏓 Mide la latencia del bot.\n' +
       '`/version` — Muestra la versión del bot.\n' +
       '`/help` o `!AirHelp` — Muestra esta lista.\n' +
@@ -105,6 +106,7 @@ const STRINGS = {
       '`/random` — 🎲 Picks someone random from the server and rates them.\n' +
       '`/verify` — ✅ Verify your account: real Nitro and connections on your card.\n' +
       '`/unverify` — Deletes your verification data.\n' +
+      '`/credits` — 👑 Who made AirFlex.\n' +
       '`/ping` — 🏓 Shows the bot\'s latency.\n' +
       '`/version` — Shows the bot version.\n' +
       '`/help` or `!AirHelp` — Shows this list.\n' +
