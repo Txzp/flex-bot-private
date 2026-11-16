@@ -3,11 +3,10 @@ const http = require('node:http');
 const { Client, GatewayIntentBits, Events, ActivityType, MessageFlags, Collection } = require('discord.js');
 const commands = require('./commands');
 const storage = require('./lib/storage');
-const { HELP_BUTTON_ID, helpEmbed } = require('./lib/help');
+const { HELP_BUTTON_ID, helpView } = require('./lib/help');
 const { isSetupInteraction, handleSetupInteraction, sendJoinWelcome } = require('./lib/setupFlow');
 const { t } = require('./lib/i18n');
 const { VERSION, HELP_PREFIX } = require('./config');
-const oauth = require('./lib/oauth');
 
 const TOKEN = (process.env.DISCORD_TOKEN || '').trim().replace(/^["']|["']$/g, '');
 if (!TOKEN) {
@@ -26,7 +25,6 @@ const client = new Client({
 client.commands = new Collection(commands.map((c) => [c.data.name, c]));
 
 client.once(Events.ClientReady, async (c) => {
-  console.log(`🔐 /verify ${oauth.isConfigured() ? 'activado' : 'desactivado (faltan CLIENT_SECRET o PUBLIC_URL)'}`);
   console.log(`⚡ AirFlex ${VERSION} conectado como ${c.user.tag} en ${c.guilds.cache.size} servidores`);
   // Estado del bot (sale debajo de su nombre en la lista de miembros)
   c.user.setPresence({ activities: [{ name: 'AirFlex', type: ActivityType.Custom, state: '/help · www.airflex.fun' }] });
@@ -77,7 +75,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
     if (isSetupInteraction(interaction)) return handleSetupInteraction(interaction);
     if (interaction.isButton() && interaction.customId === HELP_BUTTON_ID) {
-      await interaction.reply({ embeds: [helpEmbed(interaction.guildId)], flags: MessageFlags.Ephemeral });
+      await interaction.reply(helpView(interaction.guildId, { ephemeral: true }));
     }
   } catch (err) {
     console.error('[interaction]', err);
@@ -94,7 +92,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot || !message.guild) return;
   if (message.content.trim().toLowerCase() !== HELP_PREFIX) return;
-  await message.reply({ embeds: [helpEmbed(message.guild.id)], allowedMentions: { repliedUser: false } }).catch(() => null);
+  await message.reply({ ...helpView(message.guild.id), allowedMentions: { repliedUser: false, parse: [] } }).catch(() => null);
 });
 
 process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', err));
@@ -102,12 +100,7 @@ process.on('unhandledRejection', (err) => console.error('[unhandledRejection]', 
 // Mini servidor web: el hosting gratis (Render) lo necesita, y el ping de cron-job.org lo mantiene despierto 24/7
 const PORT = process.env.PORT || 3000;
 http
-  .createServer(async (req, res) => {
-    try {
-      if (await oauth.handleCallback(req, res)) return; // /callback de /verify
-    } catch (err) {
-      console.error('[http]', err.message);
-    }
+  .createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end(`AirFlex ${VERSION} online · ${client.isReady() ? client.guilds.cache.size + ' servers' : 'starting'}`);
   })

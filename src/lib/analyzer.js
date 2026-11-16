@@ -106,23 +106,12 @@ function tierFor(score) {
   return { key: 'bronze', label: 'NPC', color: '#C27C4E' };
 }
 
-// Nombres bonitos de las conexiones (OAuth2 /verify)
-const CONNECTIONS = {
-  spotify: ['Spotify', '#1DB954'], steam: ['Steam', '#66C0F4'], xbox: ['Xbox', '#107C10'], playstation: ['PlayStation', '#2E6DB4'],
-  github: ['GitHub', '#8B949E'], twitch: ['Twitch', '#9146FF'], youtube: ['YouTube', '#FF0000'], tiktok: ['TikTok', '#25F4EE'],
-  twitter: ['X', '#E7E9EA'], instagram: ['Instagram', '#E1306C'], reddit: ['Reddit', '#FF4500'], roblox: ['Roblox', '#E2231A'],
-  riotgames: ['Riot Games', '#EB0029'], leagueoflegends: ['League', '#C89B3C'], epicgames: ['Epic Games', '#CCCCCC'],
-  battlenet: ['Battle.net', '#148EFF'], crunchyroll: ['Crunchyroll', '#F47521'], bluesky: ['Bluesky', '#1185FE'],
-};
-const NITRO_TYPES = { 1: 'Nitro Classic', 2: 'Nitro', 3: 'Nitro Basic' };
-
 /**
  * @param {import('discord.js').User} user  — usuario traído con force:true
- * @param {object} ctx — datos extra de lib/profile.js: { publicFlags, raw, boosts, owner, verified }
+ * @param {object} ctx — datos extra de lib/profile.js: { publicFlags, raw, boosts, owner }
  */
 function analyzeUser(user, ctx = {}) {
   const raw = ctx.raw || {};
-  const verified = ctx.verified || null;
   const username = analyzeUsername(user.username);
   const age = analyzeAge(user.createdAt);
   const badges = badgeList(ctx.publicFlags ?? raw.public_flags ?? user.flags?.bitfield ?? 0);
@@ -141,18 +130,9 @@ function analyzeUser(user, ctx = {}) {
   const boosts = ctx.boosts || [];
   const booster = boosts.length > 0;
 
-  // Nitro: si hizo /verify usamos el dato REAL de Discord; si no, se deduce por cosas que solo da Nitro
-  let nitro = null;
-  if (verified && verified.premiumType != null) {
-    if (verified.premiumType > 0) nitro = { label: NITRO_TYPES[verified.premiumType] || 'Nitro', real: true };
-  } else if (hasBanner || animatedAvatar || animatedBanner || nameStyles) {
-    nitro = { label: 'Nitro', real: false };
-  }
-
-  const connections = (verified?.connections || []).map((type) => {
-    const [label, color] = CONNECTIONS[type] || [type.charAt(0).toUpperCase() + type.slice(1), '#99AAB5'];
-    return { type, label, color };
-  });
+  // Nitro: la API no lo dice. Se DEDUCE por cosas que solo se pueden poner con Nitro
+  // (banner de perfil, avatar/banner animado, estilos del display name).
+  const nitro = hasBanner || animatedAvatar || animatedBanner || nameStyles ? { label: 'Nitro', real: false } : null;
 
   // "Perks": cosas que se ven en el perfil pero NO son badges públicos de la API.
   const perks = [];
@@ -160,8 +140,6 @@ function analyzeUser(user, ctx = {}) {
   if (booster) perks.push({ key: 'booster', rarity: 'special', color: '#F47FFF', icon: PERK_ICONS.booster });
   if (owner) perks.push({ key: 'owner', rarity: null, color: '#FAA61A' });
   if (nameplate) perks.push({ key: 'nameplate', rarity: null, color: '#5AC8FA' });
-  for (const c of connections.slice(0, 3)) perks.push({ key: `conn_${c.type}`, label: c.label, rarity: null, color: c.color });
-  if (connections.length > 3) perks.push({ key: 'conn_more', label: `+${connections.length - 3}`, rarity: null, color: '#99AAB5' });
 
   const badgePoints = badges.reduce((s, b) => s + b.points, 0);
   let extrasPoints = 0;
@@ -173,10 +151,8 @@ function analyzeUser(user, ctx = {}) {
   if (nameplate) extrasPoints += 0.5;
   if (booster) extrasPoints += 0.5;
   if (owner) extrasPoints += 0.25;
-  if (nitro) extrasPoints += nitro.real ? 0.75 : 0.5;
+  if (nitro) extrasPoints += 0.5;
   if (boosts.length > 1) extrasPoints += 0.25;
-  if (verified) extrasPoints += 0.25;
-  extrasPoints += Math.min(1, connections.length * 0.25);
 
   const BASE = 1;
   const total = BASE + username.points + age.points + badgePoints + extrasPoints;
@@ -195,8 +171,6 @@ function analyzeUser(user, ctx = {}) {
       special: badges.filter((b) => b.rarity === 'special').length + perks.filter((pk) => pk.rarity === 'special').length,
     },
     perks,
-    verified: Boolean(verified),
-    connections,
     nitro,
     extras: { animatedAvatar, hasBanner, animatedBanner, decoration, guildTag, nameplate, owner, booster, boostCount: boosts.length, nameStyles },
     breakdown: { base: BASE, username: username.points, age: age.points, badges: badgePoints, extras: extrasPoints },

@@ -18,7 +18,7 @@ for (const [file, family] of [
 }
 
 const W = 1000;
-const H = 620;
+const H = 660;
 const BADGE_CDN = (hash) => `https://cdn.discordapp.com/badge-icons/${hash}.png`;
 
 // ---------- utilidades ----------
@@ -169,36 +169,41 @@ async function renderCard(p) {
   const avatarColor = dominantColor(avatar);
   const primary = bannerColor || accent || avatarColor || [88, 101, 242];
   const secondary = avatarColor || accent || mix(primary, tierRGB, 0.5);
-  const bgTop = mix(primary, [10, 10, 14], 0.72);
-  const bgBottom = mix(secondary, [10, 10, 14], 0.84);
+  const bgTop = mix(primary, [10, 10, 14], 0.74);
+  const bgBottom = mix(secondary, [10, 10, 14], 0.86);
   const ink = [242, 243, 245];
-  const muted = [190, 195, 205];
-  const panel = rgb([0, 0, 0], 0.32);
-  const panel2 = rgb([0, 0, 0], 0.42);
-  const ring = mix(primary, [10, 10, 14], 0.6);
+  const muted = [185, 190, 200];
+  const panel = rgb([255, 255, 255], 0.06);
+  const panelLine = rgb([255, 255, 255], 0.08);
 
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
 
-  // Fondo con degradado del tema (como los Profile Themes de Discord)
   ctx.save();
   roundRect(ctx, 0, 0, W, H, 30);
   ctx.clip();
+
+  // Fondo con degradado del tema (como los Profile Themes de Discord)
   const bg = ctx.createLinearGradient(0, 0, 0, H);
   bg.addColorStop(0, rgb(bgTop));
   bg.addColorStop(1, rgb(bgBottom));
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // Brillo suave del color del rango abajo a la derecha
-  const glow = ctx.createRadialGradient(W - 130, H - 200, 10, W - 130, H - 200, 420);
-  glow.addColorStop(0, rgb(tierRGB, 0.18));
+  // Brillo suave del color del rango abajo a la derecha + luz arriba a la izquierda
+  const glow = ctx.createRadialGradient(W - 120, H - 180, 10, W - 120, H - 180, 460);
+  glow.addColorStop(0, rgb(tierRGB, 0.2));
   glow.addColorStop(1, rgb(tierRGB, 0));
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, W, H);
+  const light = ctx.createRadialGradient(120, 240, 10, 120, 240, 420);
+  light.addColorStop(0, rgb(primary, 0.16));
+  light.addColorStop(1, rgb(primary, 0));
+  ctx.fillStyle = light;
+  ctx.fillRect(0, 0, W, H);
 
   // ---- Banner ----
-  const BANNER_H = 200;
+  const BANNER_H = 190;
   if (banner) {
     drawCover(ctx, banner, 0, 0, W, BANNER_H);
   } else {
@@ -208,33 +213,50 @@ async function renderCard(p) {
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, BANNER_H);
   }
-  const shade = ctx.createLinearGradient(0, BANNER_H - 90, 0, BANNER_H);
+  const shade = ctx.createLinearGradient(0, BANNER_H - 110, 0, BANNER_H);
   shade.addColorStop(0, rgb(bgTop, 0));
-  shade.addColorStop(1, rgb(bgTop, 0.9));
+  shade.addColorStop(1, rgb(bgTop, 0.95));
   ctx.fillStyle = shade;
   ctx.fillRect(0, 0, W, BANNER_H);
 
-  // Marca
-  ctx.font = '18px PoppinsBold';
-  ctx.textAlign = 'right';
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  roundRect(ctx, W - 132, 18, 108, 32, 16);
+  // Chip del rango (arriba a la derecha, en el banner)
+  ctx.font = '15px PoppinsBold';
+  const tierW = ctx.measureText(tier.label).width + 34;
+  roundRect(ctx, W - 40 - tierW, 22, tierW, 32, 16);
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fill();
+  ctx.strokeStyle = rgb(tierRGB, 0.9);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(W - 40 - tierW + 15, 38, 4.5, 0, Math.PI * 2);
+  ctx.fillStyle = tier.color;
   ctx.fill();
   ctx.fillStyle = '#FFFFFF';
-  ctx.fillText('AIRFLEX', W - 40, 41);
-  ctx.textAlign = 'left';
+  ctx.fillText(tier.label, W - 40 - tierW + 26, 43);
 
   // ---- Avatar ----
   const AX = 48;
-  const AY = 118;
-  const AS = 156;
+  const AY = 108;
+  const AS = 150;
+  const cx = AX + AS / 2;
+  const cy = AY + AS / 2;
+  // Anillo del color del rango con brillo
+  ctx.save();
+  ctx.shadowColor = rgb(tierRGB, 0.6);
+  ctx.shadowBlur = 24;
   ctx.beginPath();
-  ctx.arc(AX + AS / 2, AY + AS / 2, AS / 2 + 9, 0, Math.PI * 2);
-  ctx.fillStyle = rgb(ring);
+  ctx.arc(cx, cy, AS / 2 + 8, 0, Math.PI * 2);
+  ctx.fillStyle = tier.color;
+  ctx.fill();
+  ctx.restore();
+  ctx.beginPath();
+  ctx.arc(cx, cy, AS / 2 + 4, 0, Math.PI * 2);
+  ctx.fillStyle = rgb(bgTop);
   ctx.fill();
   ctx.save();
   ctx.beginPath();
-  ctx.arc(AX + AS / 2, AY + AS / 2, AS / 2, 0, Math.PI * 2);
+  ctx.arc(cx, cy, AS / 2, 0, Math.PI * 2);
   ctx.clip();
   if (avatar) ctx.drawImage(avatar, AX, AY, AS, AS);
   else {
@@ -244,11 +266,11 @@ async function renderCard(p) {
   ctx.restore();
   if (deco) {
     const DS = AS * 1.2;
-    ctx.drawImage(deco, AX + AS / 2 - DS / 2, AY + AS / 2 - DS / 2, DS, DS);
+    ctx.drawImage(deco, cx - DS / 2, cy - DS / 2, DS, DS);
   }
 
   // ---- Fila de íconos de badges (como en el perfil de Discord) ----
-  // Solo badges de verdad (con rareza): no cuenta conexiones, Owner ni Nameplate
+  // Solo badges de verdad (con rareza): no cuenta Owner ni Nameplate
   const badgeIdx = items.map((it, i) => (it.rarity ? i : -1)).filter((i) => i >= 0);
   if (badgeIdx.length) {
     const IS = 30;
@@ -256,10 +278,13 @@ async function renderCard(p) {
     const max = Math.min(badgeIdx.length, 12);
     const bw = max * IS + (max - 1) * GAP + 22;
     const bx = W - 40 - bw;
-    const by = 214;
-    roundRect(ctx, bx, by, bw, IS + 16, 12);
-    ctx.fillStyle = panel2;
+    const by = 206;
+    roundRect(ctx, bx, by, bw, IS + 16, 14);
+    ctx.fillStyle = panel;
     ctx.fill();
+    ctx.strokeStyle = panelLine;
+    ctx.lineWidth = 1;
+    ctx.stroke();
     for (let k = 0; k < max; k++) {
       const i = badgeIdx[k];
       drawBadgeIcon(ctx, icons[i], items[i].color, bx + 11 + k * (IS + GAP), by + 8, IS);
@@ -267,59 +292,38 @@ async function renderCard(p) {
   }
 
   // ---- Nombre, @username y Server Tag ----
-  const NX = 228;
+  const NX = 226;
   const nameMax = badgeIdx.length ? 360 : 520;
   ctx.fillStyle = rgb(ink);
   ctx.font = '42px PoppinsBold';
-  ctx.fillText(fitText(ctx, stripEmoji(p.displayName) || p.username, nameMax), NX, 250);
-  ctx.font = '22px Poppins';
+  ctx.fillText(fitText(ctx, stripEmoji(p.displayName) || p.username, nameMax), NX, 240);
+  ctx.font = '21px Poppins';
   ctx.fillStyle = rgb(muted);
   const handle = fitText(ctx, `@${p.username}`, 300);
-  ctx.fillText(handle, NX, 284);
+  ctx.fillText(handle, NX, 272);
 
-  let chipX = NX + ctx.measureText(handle).width + 12;
   if (a.extras.guildTag) {
-    const tx = chipX;
-    ctx.font = '17px PoppinsBold';
+    const tx = NX + ctx.measureText(handle).width + 12;
+    ctx.font = '16px PoppinsBold';
     const tw = ctx.measureText(a.extras.guildTag).width + (tagIcon ? 26 : 0) + 18;
-    roundRect(ctx, tx, 262, tw, 28, 8);
-    ctx.fillStyle = panel2;
+    roundRect(ctx, tx, 251, tw, 27, 8);
+    ctx.fillStyle = panel;
     ctx.fill();
+    ctx.strokeStyle = panelLine;
+    ctx.stroke();
     let ix = tx + 9;
     if (tagIcon) {
-      ctx.drawImage(tagIcon, ix, 267, 18, 18);
+      ctx.drawImage(tagIcon, ix, 256, 18, 18);
       ix += 24;
     }
     ctx.fillStyle = rgb(ink);
-    ctx.fillText(a.extras.guildTag, ix, 283);
-    chipX = tx + tw + 8;
-  }
-
-  // Chip ✓ VERIFIED (hizo /verify con su cuenta de Discord)
-  if (a.verified) {
-    ctx.font = '13px PoppinsBold';
-    const label = 'VERIFIED';
-    const vw = ctx.measureText(label).width + 40;
-    roundRect(ctx, chipX, 263, vw, 26, 13);
-    ctx.fillStyle = '#23A55A';
-    ctx.fill();
-    // palomita dibujada (la fuente no trae el símbolo)
-    ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 2.5;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(chipX + 11, 276);
-    ctx.lineTo(chipX + 15, 280);
-    ctx.lineTo(chipX + 22, 271);
-    ctx.stroke();
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText(label, chipX + 28, 281);
+    ctx.fillText(a.extras.guildTag, ix, 271);
   }
 
   // ---- Pastillas con nombre de cada badge ----
   let px = 48;
-  let py = 310;
-  const pills = items.length ? items : [{ label: t(lang, 'card.noBadges'), color: '#4E5058', og: false }];
+  let py = 298;
+  const pills = items.length ? items : [{ label: t(lang, 'card.noBadges'), color: '#4E5058' }];
   pills.forEach((it, i) => {
     const hasIcon = items.length > 0;
     const r = it.rarity ? RARITY[it.rarity] : null;
@@ -332,11 +336,11 @@ async function renderCard(p) {
       px = 48;
       py += 34;
     }
-    if (py > 310 + 34 * 2) return;
+    if (py > 298 + 34 * 2) return;
     roundRect(ctx, px, py, w, 28, 14);
     ctx.fillStyle = panel;
     ctx.fill();
-    ctx.strokeStyle = r ? r.color : it.color;
+    ctx.strokeStyle = r ? rgb(hexToRgb(r.color), 0.85) : rgb(hexToRgb(it.color), 0.7);
     ctx.lineWidth = 1.5;
     ctx.stroke();
     let lx = px + 15;
@@ -360,8 +364,9 @@ async function renderCard(p) {
   });
 
   // ---- Stats ----
-  const SY = 420;
+  const SY = 408;
   const SW = 163;
+  const SH = 74;
   const extras = [
     a.extras.animatedAvatar && t(lang, 'card.animated'),
     a.extras.hasBanner && t(lang, 'card.banner'),
@@ -384,71 +389,134 @@ async function renderCard(p) {
   ];
   stats.forEach(([label, value], i) => {
     const x = 48 + i * (SW + 10);
-    roundRect(ctx, x, SY, SW, 70, 14);
+    roundRect(ctx, x, SY, SW, SH, 14);
     ctx.fillStyle = panel;
     ctx.fill();
-    ctx.font = '13px Poppins';
+    ctx.strokeStyle = panelLine;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.font = '12px PoppinsBold';
     ctx.fillStyle = rgb(muted);
-    ctx.fillText(label.toUpperCase(), x + 14, SY + 24);
+    ctx.fillText(label.toUpperCase(), x + 14, SY + 23);
+    // El valor puede ocupar 2 líneas (ej. extras largos)
     let size = 16;
     ctx.font = `${size}px PoppinsBold`;
-    while (size > 12 && ctx.measureText(value).width > SW - 24) {
-      size -= 1;
+    let lines = wrapLines(ctx, value, SW - 26, 2);
+    if (lines.length > 1) {
+      size = 13;
       ctx.font = `${size}px PoppinsBold`;
+      lines = wrapLines(ctx, value, SW - 26, 2);
     }
     ctx.fillStyle = rgb(ink);
-    ctx.fillText(fitText(ctx, value, SW - 24), x + 14, SY + 52);
+    lines.forEach((l, k) => ctx.fillText(l, x + 14, SY + (lines.length > 1 ? 44 : 51) + k * 17));
+  });
+
+  // ---- Desglose de la nota (barra con 4 segmentos) ----
+  const BY = 500;
+  const BW = 682;
+  const parts = [
+    [t(lang, 'card.username'), a.breakdown.username, 1],
+    [t(lang, 'card.account'), a.breakdown.age, 0.8],
+    [t(lang, 'card.badges'), a.breakdown.badges, 0.6],
+    [t(lang, 'card.extras'), a.breakdown.extras, 0.4],
+  ];
+  const total = Math.max(0.001, parts.reduce((s, [, v]) => s + Math.max(0, v), 0));
+  const filled = clamp(a.score / 10, 0, 1) * BW;
+  roundRect(ctx, 48, BY, BW, 10, 5);
+  ctx.fillStyle = 'rgba(255,255,255,0.1)';
+  ctx.fill();
+  let bx = 48;
+  ctx.save();
+  roundRect(ctx, 48, BY, BW, 10, 5);
+  ctx.clip();
+  parts.forEach(([, v, alpha]) => {
+    const w = (Math.max(0, v) / total) * filled;
+    if (w <= 0) return;
+    ctx.fillStyle = rgb(tierRGB, alpha);
+    ctx.fillRect(bx, BY, w, 10);
+    bx += w;
+  });
+  ctx.restore();
+  let lx = 48;
+  parts.forEach(([label, v, alpha]) => {
+    ctx.beginPath();
+    ctx.arc(lx + 5, BY + 27, 4, 0, Math.PI * 2);
+    ctx.fillStyle = rgb(tierRGB, alpha);
+    ctx.fill();
+    ctx.font = '12px Poppins';
+    ctx.fillStyle = rgb(muted);
+    const txt = `${label} +${Math.max(0, Math.round(v * 10) / 10)}`;
+    ctx.fillText(txt, lx + 15, BY + 31);
+    lx += ctx.measureText(txt).width + 32;
   });
 
   // ---- Medidor ----
-  const BOX = { x: 752, y: 290, w: 208, h: 200 };
+  const BOX = { x: 752, y: 290, w: 208, h: 248 };
   roundRect(ctx, BOX.x, BOX.y, BOX.w, BOX.h, 20);
   ctx.fillStyle = panel;
   ctx.fill();
+  ctx.strokeStyle = rgb(tierRGB, 0.45);
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
   const GX = BOX.x + BOX.w / 2;
-  const GY = BOX.y + 92;
-  const GR = 66;
+  const GY = BOX.y + 108;
+  const GR = 72;
   const start = Math.PI * 0.75;
   const end = Math.PI * 2.25;
   ctx.lineCap = 'round';
-  ctx.lineWidth = 13;
-  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 14;
+  ctx.strokeStyle = 'rgba(255,255,255,0.1)';
   ctx.beginPath();
   ctx.arc(GX, GY, GR, start, end);
   ctx.stroke();
   ctx.strokeStyle = tier.color;
   ctx.shadowColor = tier.color;
-  ctx.shadowBlur = 18;
+  ctx.shadowBlur = 20;
   ctx.beginPath();
   ctx.arc(GX, GY, GR, start, start + (end - start) * clamp(a.score / 10, 0.001, 1));
   ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.textAlign = 'center';
   ctx.fillStyle = rgb(ink);
-  ctx.font = '46px PoppinsBold';
+  ctx.font = '52px PoppinsBold';
   const scoreText = Number.isInteger(a.score) ? `${a.score}` : a.score.toFixed(1);
-  ctx.fillText(scoreText, GX, GY + 14);
-  ctx.font = '16px Poppins';
+  ctx.fillText(scoreText, GX, GY + 16);
+  ctx.font = '15px Poppins';
   ctx.fillStyle = rgb(muted);
-  ctx.fillText('/ 10', GX, GY + 38);
+  ctx.fillText('/ 10', GX, GY + 40);
+  ctx.font = '12px PoppinsBold';
+  ctx.fillStyle = rgb(muted);
+  ctx.fillText('SCORE', GX, BOX.y + 30);
   ctx.font = '22px PoppinsBold';
   ctx.fillStyle = tier.color;
-  ctx.fillText(tier.label, GX, BOX.y + BOX.h - 18);
+  ctx.fillText(tier.label, GX, BOX.y + BOX.h - 22);
   ctx.textAlign = 'left';
 
   // ---- Nota ----
-  const NY = 510;
-  roundRect(ctx, 48, NY, W - 88, 82, 16);
-  ctx.fillStyle = panel2;
+  const NY = 552;
+  roundRect(ctx, 48, NY, W - 96, 66, 16);
+  ctx.fillStyle = panel;
   ctx.fill();
+  ctx.strokeStyle = panelLine;
+  ctx.lineWidth = 1;
+  ctx.stroke();
   ctx.fillStyle = tier.color;
-  roundRect(ctx, 48, NY + 16, 5, 52, 3);
+  roundRect(ctx, 48, NY + 14, 5, 38, 3);
   ctx.fill();
-  ctx.font = '19px PoppinsItalic';
+  ctx.font = '18px PoppinsItalic';
   ctx.fillStyle = rgb(ink);
   const lines = wrapLines(ctx, `“${stripEmoji(p.note)}”`, W - 150, 2);
-  const lineY = lines.length === 1 ? NY + 50 : NY + 36;
-  lines.forEach((l, i) => ctx.fillText(l, 74, lineY + i * 28));
+  const lineY = lines.length === 1 ? NY + 40 : NY + 29;
+  lines.forEach((l, i) => ctx.fillText(l, 72, lineY + i * 24));
+
+  // ---- Pie ----
+  ctx.font = '12px PoppinsBold';
+  ctx.fillStyle = rgb(muted, 0.8);
+  ctx.fillText('AIRFLEX', 48, H - 14);
+  ctx.textAlign = 'right';
+  ctx.font = '12px Poppins';
+  ctx.fillText('airflex.fun', W - 48, H - 14);
+  ctx.textAlign = 'left';
 
   ctx.restore();
 

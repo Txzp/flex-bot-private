@@ -1,8 +1,8 @@
-// Setup sin embeds y sin tiempo límite.
+// Setup con Components V2 (contenedor + separadores nativos de Discord) y sin tiempo límite.
 // Los botones guardan el paso en su customId (afsetup:...), así funcionan
 // aunque pasen horas o el bot se reinicie.
 const {
-  EmbedBuilder,
+  ContainerBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -14,7 +14,8 @@ const {
 const { t } = require('./i18n');
 const { setGuild, getLang } = require('./storage');
 const { helpButtonRow } = require('./help');
-const { CREDIT, COLOR } = require('../config');
+const { text, separator, footer, payload } = require('./ui');
+const { COLOR, WEBSITE } = require('../config');
 
 const PREFIX = 'afsetup';
 const NEEDED = [
@@ -23,58 +24,70 @@ const NEEDED = [
   PermissionFlagsBits.EmbedLinks,
   PermissionFlagsBits.AttachFiles,
 ];
-const embed = (title, desc) => new EmbedBuilder().setColor(COLOR).setTitle(title).setDescription(desc).setFooter({ text: CREDIT });
 
-// Paso 0: bienvenida (siempre en inglés)
+// Paso 0: bienvenida (siempre en inglés, aún no se eligió idioma)
 function welcomeView(guild) {
-  return {
-    content: null,
-    embeds: [
-      embed(
-        `⚡ AirFlex is now in ${guild.name}!`,
-        "AirFlex rates your profile from **0 to 10**. Ready to flex? 👑\n\n**Let's get it ready in 2 steps.**"
-      ),
-    ],
-    components: [
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`${PREFIX}:start`).setLabel("Let's Start").setEmoji('🚀').setStyle(ButtonStyle.Primary)
-      ),
-    ],
-    allowedMentions: { parse: [] },
-  };
+  const container = new ContainerBuilder()
+    .setAccentColor(COLOR)
+    .addTextDisplayComponents(text(`## AirFlex is now in ${guild.name}`), text('Rate any profile from **0 to 10** with a preview card: username, account age, badges and extras.'))
+    .addSeparatorComponents(separator())
+    .addTextDisplayComponents(text('Two quick steps and it is ready: **language** and **channel**.'))
+    .addActionRowComponents(
+      new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId(`${PREFIX}:start`).setLabel('Start setup').setStyle(ButtonStyle.Primary))
+    )
+    .addSeparatorComponents(separator(false))
+    .addTextDisplayComponents(footer(`Admins only · ${WEBSITE}`));
+  return payload(container);
 }
 
 // Paso 1: idioma
 function languageView() {
-  return {
-    content: null,
-    embeds: [embed('🌐 Choose your language / Elige tu idioma', 'Step **1 of 2**')],
-    components: [
+  const container = new ContainerBuilder()
+    .setAccentColor(COLOR)
+    .addTextDisplayComponents(text('## Language · Idioma'), text('-# Step 1 of 2 · Paso 1 de 2'))
+    .addSeparatorComponents(separator())
+    .addTextDisplayComponents(text('Choose the language AirFlex will use in this server.\nElige el idioma que AirFlex usará en este servidor.'))
+    .addActionRowComponents(
       new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`${PREFIX}:lang:en`).setLabel('English').setEmoji('🇺🇸').setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId(`${PREFIX}:lang:es`).setLabel('Español').setEmoji('🇪🇸').setStyle(ButtonStyle.Secondary)
-      ),
-    ],
-  };
+        new ButtonBuilder().setCustomId(`${PREFIX}:lang:en`).setLabel('English').setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId(`${PREFIX}:lang:es`).setLabel('Español').setStyle(ButtonStyle.Secondary)
+      )
+    );
+  return payload(container);
 }
 
-// Paso 2: canal
+// Paso 2: canal (con el dropdown de canales)
 function channelView(lang, warning) {
-  return {
-    content: null,
-    embeds: [embed(t(lang, 'setup.channel.title'), t(lang, 'setup.channel.desc') + (warning ? `\n\n${warning}` : ''))],
-    components: [
-      new ActionRowBuilder().addComponents(
-        new ChannelSelectMenuBuilder()
-          .setCustomId(`${PREFIX}:chan:${lang}`)
-          .setPlaceholder(t(lang, 'setup.channel.placeholder'))
-          .setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
-          .setMinValues(1)
-          .setMaxValues(1)
-      ),
-    ],
-    allowedMentions: { parse: [] },
-  };
+  const container = new ContainerBuilder()
+    .setAccentColor(COLOR)
+    .addTextDisplayComponents(text(`## ${t(lang, 'setup.channel.title')}`), text(`-# ${t(lang, 'setup.step', { n: 2 })}`))
+    .addSeparatorComponents(separator())
+    .addTextDisplayComponents(text(t(lang, 'setup.channel.desc')));
+  if (warning) container.addTextDisplayComponents(text(warning));
+  container.addActionRowComponents(
+    new ActionRowBuilder().addComponents(
+      new ChannelSelectMenuBuilder()
+        .setCustomId(`${PREFIX}:chan:${lang}`)
+        .setPlaceholder(t(lang, 'setup.channel.placeholder'))
+        .setChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
+        .setMinValues(1)
+        .setMaxValues(1)
+    )
+  );
+  return payload(container);
+}
+
+// Paso final
+function doneView(lang, channel) {
+  const container = new ContainerBuilder()
+    .setAccentColor(0x23a55a)
+    .addTextDisplayComponents(text(`## ${t(lang, 'setup.done.title')}`), text(t(lang, 'setup.done.desc', { channel: `${channel}` })))
+    .addSeparatorComponents(separator())
+    .addTextDisplayComponents(text(t(lang, 'setup.done.hint')))
+    .addActionRowComponents(helpButtonRow(lang))
+    .addSeparatorComponents(separator(false))
+    .addTextDisplayComponents(footer(WEBSITE));
+  return payload(container);
 }
 
 function isSetupInteraction(interaction) {
@@ -99,12 +112,7 @@ async function handleSetupInteraction(interaction) {
       return interaction.update(channelView(lang, t(lang, 'setup.noPerms', { channel: `${channel}` })));
     }
     await setGuild(interaction.guildId, { lang, channelId: channel.id, setupBy: interaction.user.id });
-    return interaction.update({
-      content: null,
-      embeds: [embed(t(lang, 'setup.done.title'), t(lang, 'setup.done.desc', { channel: `${channel}` }))],
-      components: [helpButtonRow(lang)],
-      allowedMentions: { parse: [] },
-    });
+    return interaction.update(doneView(lang, channel));
   }
 }
 

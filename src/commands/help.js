@@ -1,5 +1,5 @@
-const { SlashCommandBuilder, InteractionContextType, MessageFlags } = require('discord.js');
-const { helpEmbed } = require('../lib/help');
+const { SlashCommandBuilder, InteractionContextType } = require('discord.js');
+const { helpView } = require('../lib/help');
 
 module.exports = {
   data: new SlashCommandBuilder()
@@ -9,6 +9,6 @@ module.exports = {
     .setContexts(InteractionContextType.Guild),
 
   async execute(interaction) {
-    await interaction.reply({ embeds: [helpEmbed(interaction.guildId)], flags: MessageFlags.Ephemeral });
+    await interaction.reply(helpView(interaction.guildId, { ephemeral: true }));
   },
 };
