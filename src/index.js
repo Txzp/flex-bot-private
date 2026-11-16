@@ -5,6 +5,7 @@ const commands = require('./commands');
 const storage = require('./lib/storage');
 const { HELP_BUTTON_ID, helpView } = require('./lib/help');
 const { isSetupInteraction, handleSetupInteraction, sendJoinWelcome } = require('./lib/setupFlow');
+const { syncDiscordBotList } = require('./lib/botlists');
 const { t } = require('./lib/i18n');
 const { VERSION, HELP_PREFIX } = require('./config');
 
@@ -32,8 +33,11 @@ client.once(Events.ClientReady, async (c) => {
   // Registra los slash commands GLOBALMENTE en cada arranque (todos los servidores, actuales y nuevos).
   // Así basta con hacer git push: no hace falta correr npm run deploy a mano.
   try {
-    const registered = await c.application.commands.set(commands.map((cmd) => cmd.data.toJSON()));
+    const body = commands.map((cmd) => cmd.data.toJSON());
+    const registered = await c.application.commands.set(body);
     console.log(`✅ ${registered.size} comandos globales listos: ${[...registered.values()].map((x) => '/' + x.name).join(' ')}`);
+    // Sincroniza los slash commands con discordbotlist.com (necesita DBL_TOKEN en el env)
+    syncDiscordBotList(c.user.id, body).catch(() => null);
   } catch (err) {
     console.error('❌ No se pudieron registrar los comandos:', err.message);
   }
