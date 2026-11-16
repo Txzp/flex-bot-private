@@ -1,5 +1,5 @@
 // Lógica compartida de /flex y /random: revisar canal y cooldown, analizar y mandar la tarjeta.
-const { EmbedBuilder, AttachmentBuilder, MessageFlags } = require('discord.js');
+const { ContainerBuilder, MediaGalleryBuilder, MediaGalleryItemBuilder, AttachmentBuilder, MessageFlags } = require('discord.js');
 const { t } = require('./i18n');
 const { getGuild, getLang } = require('./storage');
 const { analyzeUser } = require('./analyzer');
@@ -7,7 +7,8 @@ const { getFullProfile } = require('./profile');
 const { buildNote } = require('./notes');
 const { renderCard } = require('./card');
 const { helpButtonRow } = require('./help');
-const { COOLDOWN_MS } = require('../config');
+const { text, separator, footer, payload } = require('./ui');
+const { COOLDOWN_MS, WEBSITE } = require('../config');
 
 const cooldowns = new Map();
 
@@ -29,6 +30,37 @@ async function precheck(interaction) {
   return true;
 }
 
+function ageLabel(lang, months) {
+  if (months < 12) return t(lang, 'card.months', { n: months });
+  const years = Math.floor(months / 12);
+  return years === 1 ? t(lang, 'card.year') : t(lang, 'card.years', { n: years });
+}
+
+/** Contenedor V2 con la tarjeta, la nota y un resumen rápido. */
+function flexView(lang, user, analysis, note, intro) {
+  const scoreText = Number.isInteger(analysis.score) ? String(analysis.score) : analysis.score.toFixed(1);
+  const name = user.globalName || user.username;
+  const badgeCount = analysis.badges.length + analysis.perks.filter((p) => p.rarity).length;
+  const stats = [
+    `**${t(lang, 'flex.statUsername')}** · \`${user.username}\` (${analysis.username.tag})`,
+    `**${t(lang, 'flex.statAccount')}** · ${analysis.age.year} · ${ageLabel(lang, analysis.age.months)}`,
+    `**${t(lang, 'flex.statBadges')}** · ${badgeCount || t(lang, 'card.none')}`,
+  ].join('\n');
+
+  const container = new ContainerBuilder().setAccentColor(parseInt(analysis.tier.color.slice(1), 16));
+  if (intro) container.addTextDisplayComponents(text(intro)).addSeparatorComponents(separator());
+  container
+    .addTextDisplayComponents(text(`## ${t(lang, 'flex.title', { name })}  ·  ${t(lang, 'flex.score', { score: scoreText })}`), text(`-# ${analysis.tier.label}`))
+    .addMediaGalleryComponents(new MediaGalleryBuilder().addItems(new MediaGalleryItemBuilder().setURL('attachment://airflex.png')))
+    .addTextDisplayComponents(text(`> ${note}`))
+    .addSeparatorComponents(separator())
+    .addTextDisplayComponents(text(stats))
+    .addActionRowComponents(helpButtonRow(lang))
+    .addSeparatorComponents(separator(false))
+    .addTextDisplayComponents(footer(WEBSITE));
+  return container;
+}
+
 /**
  * Analiza a targetId y edita la respuesta (ya diferida) con la tarjeta.
  * @param {string} [intro] texto opcional arriba de la tarjeta (ej. el anuncio de /random)
@@ -36,7 +68,7 @@ async function precheck(interaction) {
 async function sendFlex(interaction, targetId, intro) {
   const lang = getLang(interaction.guildId);
   try {
-    // Perfil completo: JSON crudo de la API + boosts en servidores en común + datos de /verify
+    // Perfil completo: JSON crudo de la API + boosts en servidores en común
     const profile = await getFullProfile(interaction.client, targetId, interaction.guild);
     const { user } = profile;
 
@@ -55,25 +87,13 @@ async function sendFlex(interaction, targetId, intro) {
       accentColor: user.accentColor ?? null,
     });
 
-    const scoreText = Number.isInteger(analysis.score) ? analysis.score : analysis.score.toFixed(1);
-    const embed = new EmbedBuilder()
-      .setColor(parseInt(analysis.tier.color.slice(1), 16))
-      .setTitle(t(lang, 'flex.title', { name: user.globalName || user.username, score: scoreText }))
-      .setDescription(`> ${note}`)
-      .setImage('attachment://airflex.png')
-      .setFooter({ text: analysis.verified ? `✅ Verified · ${analysis.tier.label}` : analysis.tier.label });
-
-    await interaction.editReply({
-      content: intro || null,
-      embeds: [embed],
-      files: [new AttachmentBuilder(png, { name: 'airflex.png' })],
-      components: [helpButtonRow(lang)],
-      allowedMentions: { parse: [] },
-    });
+    await interaction.editReply(
+      payload(flexView(lang, user, analysis, note, intro), { files: [new AttachmentBuilder(png, { name: 'airflex.png' })] })
+    );
   } catch (err) {
     console.error('[flex]', err);
     cooldowns.delete(interaction.user.id);
-    await interaction.editReply({ content: t(lang, 'flex.error'), embeds: [], files: [], components: [] }).catch(() => null);
+    await interaction.editReply({ content: t(lang, 'flex.error'), components: [], files: [] }).catch(() => null);
   }
 }
 

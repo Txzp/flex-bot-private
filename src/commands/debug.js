@@ -18,7 +18,7 @@ module.exports = {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
     const target = interaction.options.getUser('user');
     const profile = await getFullProfile(interaction.client, target.id, interaction.guild);
-    const { raw, publicFlags, boosts, owner, verified } = profile;
+    const { raw, publicFlags, boosts, owner } = profile;
     const a = analyzeUser(profile.user, profile);
 
     let flagNames = [];
@@ -37,8 +37,7 @@ module.exports = {
       `${yes(raw?.avatar_decoration_data)} Decoración · ${yes(raw?.collectibles?.nameplate)} Nameplate · ${yes(raw?.display_name_styles)} Display name style`,
       `${yes(raw?.primary_guild?.tag)} Server tag${raw?.primary_guild?.tag ? ` \`${raw.primary_guild.tag}\`` : ''} · ${yes(owner)} Owner aquí`,
       `**Boosts en servidores con AirFlex:** ${boosts.length}`,
-      `**Nitro:** ${a.nitro ? `${a.nitro.label} (${a.nitro.real ? 'real, por /verify' : 'deducido'})` : '❌ no detectado'}`,
-      `**/verify:** ${verified ? `✅ (${(verified.connections || []).length} conexiones públicas)` : '❌'}`,
+      `**Nitro:** ${a.nitro ? 'deducido (banner / GIF / estilo de nombre)' : '❌ no detectado'}`,
       '',
       `**Nota:** ${a.score}/10 · base ${a.breakdown.base} + username ${a.breakdown.username} + edad ${a.breakdown.age} + badges ${a.breakdown.badges} + extras ${a.breakdown.extras}`,
     ];

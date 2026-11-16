@@ -1,4 +1,4 @@
-# ⚡ AirFlex v1.07
+# ⚡ AirFlex v1.08
 
 Bot de Discord que califica perfiles del **0 al 10** con una tarjeta de preview. Sin IA de pago: todo funciona con reglas.
 
@@ -8,14 +8,19 @@ Bot de Discord que califica perfiles del **0 al 10** con una tarjeta de preview.
 | `/setup` | (Admins) Elegir idioma (Español / English) y el canal de AirFlex |
 | `/flex` | Analiza **tu** perfil |
 | `/flex @user` | Analiza el perfil de **otro** usuario |
-| `/random` | 🎲 Elige a alguien al azar (de los que hablaron hace poco) y lo califica |
-| `/verify` | ✅ Login con Discord: muestra Nitro real y conexiones públicas en la tarjeta |
-| `/unverify` | Borra los datos de verificación del usuario |
+| `/random` | Elige a alguien al azar (de los que hablaron hace poco) y lo califica |
 | `/debug @user` | (Admins) Datos crudos que Discord le da al bot sobre ese perfil |
 | `/help` o `!AirHelp` | Lista de comandos (también el botón **Help**) |
-| `/credits` | 👑 Créditos (público, se borra a los 7 segundos) |
 | `/ping` | 🏓 Pong! `44ms` |
-| `/version` | Muestra la versión (`v1.00`) |
+| `/version` | Muestra la versión (`v1.08`) |
+
+## Novedades v1.08
+- **Setup rediseñado** con **Components V2** de Discord (contenedor + separadores nativos, no `---`).
+- Fuera el emoji del cohete y el pie **Made by: k940**.
+- **Embed de `/flex`** en Components V2: título, tarjeta, nota y stats rápidos.
+- **Tarjeta rediseñada**: anillo del avatar del color del rango, chip del tier en el banner, barra de desglose (Username / Cuenta / Badges / Extras), medidor más grande con la etiqueta SCORE y pie con `airflex.fun`.
+- Se quitaron los comandos `/verify`, `/unverify` y `/credits`.
+- Las badges que **no** están en `public_flags` (Nitro, Booster) se **deducen** del perfil público (banner propio, avatar/banner animado, estilo del display name, boost en un servidor en común). Sin selfbots, sin API privada.
 
 ## Instalación (Windows / PowerShell)
 1. Instala **Node.js 18 o superior** (nodejs.org).
@@ -25,14 +30,11 @@ Bot de Discord que califica perfiles del **0 al 10** con una tarjeta de preview.
    copy .env.example .env
    ```
 3. Abre `.env` y pon tu `DISCORD_TOKEN` y `CLIENT_ID` (y `GUILD_ID` de tu server de pruebas si quieres que los comandos salgan al instante).
-4. Registra los comandos y enciende el bot:
+4. Enciende el bot (los comandos se registran solos al arrancar):
    ```powershell
-   npm run deploy
    npm start
    ```
 5. En tu servidor usa `/setup`.
-
-> Antes de publicar, borra `GUILD_ID` del `.env` y vuelve a ejecutar `npm run deploy` para registrar los comandos globalmente (tardan hasta 1 hora en aparecer).
 
 **Probar la tarjeta sin Discord:** `npm run test-card` (o `npm run test-card -- en`) genera `test-card.png`.
 
@@ -45,8 +47,8 @@ Bot de Discord que califica perfiles del **0 al 10** con una tarjeta de preview.
 Base 1 punto, máximo 10:
 - **Username:** 2c +4 · 3c +3 · 4c +2 · 5c +1 · solo letras +1 · palabra real +1 · números o símbolos restan
 - **Antigüedad:** ≤2015 +3 · 2016 +2.5 · 2017 +2 · 2018 +1.5 · 2019 +1 · 2020-21 +0.5
-- **Badges:** Staff +3 · Partner / Bug Hunter Gold +2.5 · HypeSquad Events / Early Supporter / Early Bot Dev +2 · Bug Hunter / Mod Alumni +1.5 · Active Dev +0.5 · casas HypeSquad +0.25
-- **Extras:** avatar animado +1 · banner +0.75 (animado +0.5) · decoración +0.5 · tag de servidor +0.5
+- **Badges públicos:** Staff +3 · Partner / Bug Hunter 2 / Early Supporter +2.5 · Bug Hunter / Mod Alumni / Early Bot Dev +1.5 · HypeSquad +1 · Active Dev +0.5 · casas HypeSquad +0.25
+- **Extras:** avatar animado +1 · banner +0.75 (animado +0.5) · decoración +0.5 · tag de servidor +0.5 · nameplate +0.5 · booster +0.5 (2+ boosts +0.25) · owner +0.25 · Nitro deducido +0.5
 
 Puedes cambiar los puntos en `src/lib/analyzer.js` y las frases de la nota en `src/lib/notes.js`.
 
@@ -56,24 +58,22 @@ Puedes cambiar los puntos en `src/lib/analyzer.js` y las frases de la nota en `s
 ```
 src/
   index.js            arranque del bot, botón Help y !AirHelp
-  deploy-commands.js  registra los slash commands
+  deploy-commands.js  registra los slash commands (opcional, el bot lo hace solo al arrancar)
   config.js           versión y ajustes
-  commands/           setup, flex, help, ping, version
+  commands/           setup, flex, random, help, ping, version, debug
   lib/
     analyzer.js       reglas y puntuación
     notes.js          frases de la nota (es/en)
     card.js           dibuja la tarjeta PNG
+    profile.js        junta todo lo que Discord deja ver sobre un usuario
+    flexRunner.js     lógica compartida de /flex y /random (Components V2)
+    setupFlow.js      flujo de /setup con Components V2
+    ui.js             helpers de Components V2 (contenedor, separador, pie)
     i18n.js           textos en español e inglés
-    storage.js        guarda idioma y canal por servidor (data/guilds.json)
+    storage.js        guarda idioma y canal por servidor (data/guilds.json o MongoDB)
+    help.js           /help como contenedor V2
 assets/fonts/         fuente Poppins (para que la tarjeta se vea igual en cualquier PC/servidor)
 ```
-
-## Comandos en todos los servidores
-- `npm run deploy` → registra los comandos **globalmente** (todos los servers donde esté el bot). Tardan hasta 1 hora la primera vez.
-- `npm run deploy:test` → solo en tu server de pruebas (`GUILD_ID`), al instante.
-- `npm run deploy:clear` → borra los de prueba. Úsalo después del global para que no salgan **repetidos** en tu server.
-
-Cuando el bot entra a un server nuevo, manda solo el mensaje **"AirFlex is now in …"** con el botón **Let's Start**. Solo los admins pueden tocarlo y el setup no expira.
 
 ## Hosting gratis 24/7 (Render + cron-job.org + MongoDB Atlas)
 1. **MongoDB Atlas** (mongodb.com/atlas): crea un cluster **M0 Free** → *Database Access*: crea usuario y clave → *Network Access*: añade `0.0.0.0/0` → *Connect → Drivers*: copia el link `mongodb+srv://...` (cambia `<password>` por tu clave).
@@ -85,15 +85,6 @@ Cuando el bot entra a un server nuevo, manda solo el mensaje **"AirFlex is now i
 4. **cron-job.org**: crea un cronjob que visite tu URL de Render (`https://tu-bot.onrender.com`) **cada 10 minutos**. Así Render nunca lo duerme.
 
 Render Free da 750 horas al mes, suficiente para tener 1 servicio prendido todo el mes.
-
-## /verify (Login with Discord) — opcional
-Así un usuario le enseña a AirFlex su **Nitro real** y sus **conexiones públicas**, que la API normal no da.
-1. Developer Portal → **OAuth2** → copia el **Client Secret** (Reset Secret si hace falta).
-2. **OAuth2 → Redirects → Add Redirect:** `https://flex-bot-private.onrender.com/callback` → Save.
-3. Render → Environment: `CLIENT_SECRET` y `PUBLIC_URL=https://flex-bot-private.onrender.com`.
-4. En los logs debe salir `🔐 /verify activado`.
-
-Solo se guarda el tipo de Nitro y los **tipos** de conexiones públicas. El token de acceso se revoca al terminar.
 
 ## Depurar badges
 - `/debug @user` (admins) muestra los `public_flags` crudos y qué detectó el bot.

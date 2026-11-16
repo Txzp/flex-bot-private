@@ -1,15 +1,14 @@
 // Guarda:
-//  - guilds:   configuración de cada servidor (idioma + canal)
-//  - verified: usuarios que hicieron /verify (tipo de Nitro + tipos de conexiones)
+//  - guilds: configuración de cada servidor (idioma + canal)
 // Con MONGODB_URI → MongoDB Atlas. Sin MONGODB_URI → archivos en data/ (para probar en tu PC).
 // Todo se mantiene en memoria para que leer sea instantáneo.
 const fs = require('node:fs');
 const path = require('node:path');
 
 const DATA_DIR = path.join(__dirname, '..', '..', 'data');
-const FILES = { guilds: path.join(DATA_DIR, 'guilds.json'), verified: path.join(DATA_DIR, 'verified.json') };
-const cache = { guilds: {}, verified: {} };
-const cols = { guilds: null, verified: null };
+const FILES = { guilds: path.join(DATA_DIR, 'guilds.json') };
+const cache = { guilds: {} };
+const cols = { guilds: null };
 
 async function init() {
   const uri = process.env.MONGODB_URI;
@@ -23,7 +22,7 @@ async function init() {
       const docs = await cols[name].find({}).toArray();
       cache[name] = Object.fromEntries(docs.map(({ _id, ...rest }) => [_id, rest]));
     }
-    console.log(`🗄️  MongoDB conectado (${Object.keys(cache.guilds).length} servidores, ${Object.keys(cache.verified).length} verificados)`);
+    console.log(`🗄️  MongoDB conectado (${Object.keys(cache.guilds).length} servidores)`);
   } else {
     for (const name of Object.keys(cache)) {
       try {
@@ -32,7 +31,7 @@ async function init() {
         cache[name] = {};
       }
     }
-    console.log(`🗄️  Usando data/*.json (${Object.keys(cache.guilds).length} servidores, ${Object.keys(cache.verified).length} verificados)`);
+    console.log(`🗄️  Usando data/*.json (${Object.keys(cache.guilds).length} servidores)`);
   }
 }
 
@@ -64,9 +63,4 @@ const setGuild = (guildId, data) => put('guilds', guildId, data);
 const deleteGuild = (guildId) => remove('guilds', guildId);
 const getLang = (guildId) => cache.guilds[guildId]?.lang || 'en';
 
-// Usuarios verificados
-const getVerified = (userId) => cache.verified[userId] || null;
-const setVerified = (userId, data) => put('verified', userId, data);
-const deleteVerified = (userId) => remove('verified', userId);
-
-module.exports = { init, getGuild, setGuild, deleteGuild, getLang, getVerified, setVerified, deleteVerified };
+module.exports = { init, getGuild, setGuild, deleteGuild, getLang };
